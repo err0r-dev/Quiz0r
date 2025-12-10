@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,7 +55,7 @@ export default function GamesPage() {
     }
   }
 
-  function handleGameDeleted(gameId: string) {
+  const handleGameDeleted = useCallback((gameId: string) => {
     setSelectedGameId(null);
     setGames((prev) => prev.filter((g) => g.id !== gameId));
 
@@ -66,7 +66,15 @@ export default function GamesPage() {
     }
 
     fetchGames();
-  }
+  }, [games.length, pagination.page]);
+
+  const handleGameClick = useCallback((gameId: string) => {
+    setSelectedGameId(gameId);
+  }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    setPagination((prev) => ({ ...prev, page }));
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -121,7 +129,7 @@ export default function GamesPage() {
             <GameCard
               key={game.id}
               game={game}
-              onClick={() => setSelectedGameId(game.id)}
+              onClick={() => handleGameClick(game.id)}
             />
           ))}
         </div>
@@ -132,7 +140,7 @@ export default function GamesPage() {
         <GamePagination
           currentPage={pagination.page}
           totalPages={pagination.totalPages}
-          onPageChange={(page: number) => setPagination((prev) => ({ ...prev, page }))}
+          onPageChange={handlePageChange}
         />
       )}
 

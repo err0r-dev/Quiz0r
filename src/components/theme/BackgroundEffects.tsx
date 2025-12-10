@@ -30,7 +30,7 @@ export function BackgroundEffects({ theme, contained = false }: BackgroundEffect
 
   // Generate particles based on theme
   const generateParticles = useCallback(() => {
-    const count = 50;
+    const count = 25; // Reduced from 50 for better performance
     const newParticles: Particle[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -254,7 +254,7 @@ export function CelebrationEffect({ type, trigger }: CelebrationProps) {
 
       // Generate celebration particles
       const newParticles: Particle[] = [];
-      const count = type === "confetti" ? 100 : type === "fireworks" ? 50 : 30;
+      const count = type === "confetti" ? 50 : type === "fireworks" ? 30 : 20; // Reduced for performance
 
       for (let i = 0; i < count; i++) {
         newParticles.push({

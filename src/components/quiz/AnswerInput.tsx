@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, X, Trash2 } from "lucide-react";
@@ -20,7 +21,7 @@ interface AnswerInputProps {
   onToggleCorrect: () => void;
 }
 
-export function AnswerInput({
+export const AnswerInput = React.memo(function AnswerInput({
   answer,
   index,
   canDelete,
@@ -92,6 +93,16 @@ export function AnswerInput({
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if answer data or index changes
+  return (
+    prevProps.index === nextProps.index &&
+    prevProps.canDelete === nextProps.canDelete &&
+    prevProps.answer.id === nextProps.answer.id &&
+    prevProps.answer.answerText === nextProps.answer.answerText &&
+    prevProps.answer.isCorrect === nextProps.answer.isCorrect &&
+    prevProps.answer.imageUrl === nextProps.answer.imageUrl
+  );
+});
 
 export type { Answer };

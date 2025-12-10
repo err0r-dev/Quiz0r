@@ -2,15 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { validateThemeJson } from "@/lib/theme";
 
-export const dynamic = "force-dynamic";
-
 export async function GET() {
   try {
     const themes = await prisma.theme.findMany({
       orderBy: { updatedAt: "desc" },
     });
 
-    return NextResponse.json({ themes });
+    return NextResponse.json({ themes }, {
+      headers: {
+        // Themes don't change often, can cache longer
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60'
+      }
+    });
   } catch (error) {
     console.error("Failed to fetch themes:", error);
     return NextResponse.json({ error: "Failed to fetch themes" }, { status: 500 });

@@ -155,7 +155,7 @@ export async function joinAsPlayer(
 
     const playerPage = await context.newPage();
     await playerPage.goto(`${baseURL}/play/${gameCode}`);
-    await playerPage.waitForLoadState("networkidle");
+    await playerPage.waitForLoadState("domcontentloaded");
 
     // Fill in player name
     const nameInput = playerPage

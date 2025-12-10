@@ -101,6 +101,11 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit)
       }
+    }, {
+      headers: {
+        // Short cache for frequently changing game list
+        'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=5'
+      }
     });
   } catch (error) {
     console.error("Failed to fetch games:", error);

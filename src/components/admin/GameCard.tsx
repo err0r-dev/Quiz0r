@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Card,
   CardContent,
@@ -14,7 +15,7 @@ interface GameCardProps {
   onClick: () => void;
 }
 
-export function GameCard({ game, onClick }: GameCardProps) {
+export const GameCard = React.memo(function GameCard({ game, onClick }: GameCardProps) {
   const isRunning = game.status !== "FINISHED";
   const dateDisplay = game.endedAt
     ? formatDistanceToNow(new Date(game.endedAt), { addSuffix: true })
@@ -68,4 +69,12 @@ export function GameCard({ game, onClick }: GameCardProps) {
       )}
     </Card>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if game data actually changed
+  return (
+    prevProps.game.id === nextProps.game.id &&
+    prevProps.game.status === nextProps.game.status &&
+    prevProps.game.playerCount === nextProps.game.playerCount &&
+    prevProps.game.topPlayers.length === nextProps.game.topPlayers.length
+  );
+});

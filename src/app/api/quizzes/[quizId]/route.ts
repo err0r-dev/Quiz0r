@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getCachedQuiz, setCachedQuiz, invalidateQuizCache } from "@/lib/cache";
 
 interface RouteParams {
   params: Promise<{ quizId: string }>;
@@ -9,6 +10,17 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { quizId } = await params;
+
+    // Check cache first
+    const cached = getCachedQuiz(quizId);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30',
+          'X-Cache': 'HIT'
+        }
+      });
+    }
 
     const quiz = await prisma.quiz.findUnique({
       where: { id: quizId },
@@ -32,7 +44,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
     }
 
-    return NextResponse.json(quiz);
+    // Cache the result before returning
+    setCachedQuiz(quizId, quiz);
+
+    return NextResponse.json(quiz, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30',
+        'X-Cache': 'MISS'
+      }
+    });
   } catch (error) {
     console.error("Error fetching quiz:", error);
     return NextResponse.json(
@@ -58,6 +78,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }),
       },
     });
+
+    // Invalidate cache after update
+    invalidateQuizCache(quizId);
 
     return NextResponse.json(quiz);
   } catch (error) {
@@ -86,6 +109,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       },
     });
 
+    // Invalidate cache after update
+    invalidateQuizCache(quizId);
+
     return NextResponse.json(quiz);
   } catch (error) {
     console.error("Error updating quiz:", error);
@@ -105,6 +131,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       where: { id: quizId },
       data: { isActive: false },
     });
+
+    // Invalidate cache after deletion
+    invalidateQuizCache(quizId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

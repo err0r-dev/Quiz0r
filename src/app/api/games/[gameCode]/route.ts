@@ -48,17 +48,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Determine available languages (base English + any question/answer translations)
-    const questionLanguages = await prisma.questionTranslation.findMany({
-      where: { question: { quizId: gameSession.quizId } },
-      distinct: ["languageCode"],
-      select: { languageCode: true },
-    });
-
-    const answerLanguages = await prisma.answerTranslation.findMany({
-      where: { answer: { question: { quizId: gameSession.quizId } } },
-      distinct: ["languageCode"],
-      select: { languageCode: true },
-    });
+    // Optimized: Combined query using Promise.all for parallel execution
+    const [questionLanguages, answerLanguages] = await Promise.all([
+      prisma.questionTranslation.findMany({
+        where: { question: { quizId: gameSession.quizId } },
+        distinct: ["languageCode"],
+        select: { languageCode: true },
+      }),
+      prisma.answerTranslation.findMany({
+        where: { answer: { question: { quizId: gameSession.quizId } } },
+        distinct: ["languageCode"],
+        select: { languageCode: true },
+      }),
+    ]);
 
     const availableLanguages = Array.from(
       new Set<string>([
@@ -86,6 +88,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         score: p.totalScore,
         isActive: p.isActive,
       })),
+    }, {
+      headers: {
+        // Shorter cache for game state since it changes during gameplay
+        'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=5'
+      }
     });
   } catch (error) {
     console.error("Error fetching game:", error);

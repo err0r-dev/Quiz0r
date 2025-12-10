@@ -39,6 +39,8 @@ interface ActiveGame {
   correctAnswerIds: Map<string, string[]>; // questionId -> correctAnswerIds
   playerAnswers: Map<string, Set<string>>; // questionId -> Set of playerIds who answered
   previousPositions: Map<string, number>; // playerId -> previous position
+  // Performance optimization: Cache answer distribution in memory
+  answerDistribution: Map<string, Record<string, number>>; // questionId -> { answerId: count }
   pendingReveal?: {
     correctAnswerIds: string[];
     stats: {
@@ -352,6 +354,7 @@ export class GameManager {
         correctAnswerIds,
         playerAnswers: new Map(),
         previousPositions: new Map(),
+        answerDistribution: new Map(), // Initialize answer distribution cache
       });
 
       // Update database
@@ -542,6 +545,15 @@ export class GameManager {
 
     answeredPlayers.add(playerId);
 
+    // Update answer distribution in memory (performance optimization)
+    if (!game.answerDistribution.has(questionId)) {
+      game.answerDistribution.set(questionId, {});
+    }
+    const distribution = game.answerDistribution.get(questionId)!;
+    for (const answerId of answerIds) {
+      distribution[answerId] = (distribution[answerId] || 0) + 1;
+    }
+
     const question = game.questions[game.currentQuestionIndex];
     const correctIds = game.correctAnswerIds.get(questionId) || [];
     const timeTaken = Date.now() - (game.questionStartedAt || 0);
@@ -673,19 +685,9 @@ export class GameManager {
     const question = game.questions[game.currentQuestionIndex];
     const correctIds = game.correctAnswerIds.get(question.id) || [];
 
-    // Get answer statistics
+    // Get answer statistics from memory (performance optimization)
     const answeredPlayers = game.playerAnswers.get(question.id);
-    const answers = await prisma.playerAnswer.findMany({
-      where: { questionId: question.id },
-    });
-
-    const distribution: Record<string, number> = {};
-    for (const answer of answers) {
-      const selected = JSON.parse(answer.selectedAnswerIds) as string[];
-      for (const id of selected) {
-        distribution[id] = (distribution[id] || 0) + 1;
-      }
-    }
+    const distribution = game.answerDistribution.get(question.id) || {};
 
     // Update database
     await prisma.gameSession.update({

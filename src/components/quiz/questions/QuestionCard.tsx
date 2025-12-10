@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
   GripVertical,
   Check,
@@ -62,7 +63,7 @@ interface QuestionCardProps {
   partialLanguages: LanguageCode[];
 }
 
-export function QuestionCard({
+export const QuestionCard = React.memo(function QuestionCard({
   question,
   questionNumber,
   onEdit,
@@ -350,10 +351,21 @@ export function QuestionCard({
       </div>
     </TooltipProvider>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison: re-render only if question data or warnings changed
+  return (
+    prevProps.question.id === nextProps.question.id &&
+    prevProps.question.questionText === nextProps.question.questionText &&
+    prevProps.question.imageUrl === nextProps.question.imageUrl &&
+    prevProps.questionNumber === nextProps.questionNumber &&
+    prevProps.showHintWarning === nextProps.showHintWarning &&
+    prevProps.translationStatus === nextProps.translationStatus &&
+    prevProps.question.answers.length === nextProps.question.answers.length
+  );
+});
 
 // Drag overlay version (non-interactive)
-export function QuestionCardOverlay({
+export const QuestionCardOverlay = React.memo(function QuestionCardOverlay({
   question,
   questionNumber,
 }: {
@@ -393,4 +405,4 @@ export function QuestionCardOverlay({
       </CardHeader>
     </Card>
   );
-}
+});

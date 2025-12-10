@@ -81,6 +81,7 @@ docker compose logs -f   # wait for "Ready on http://localhost:3000"
 - `npm run dev` — start Next.js + Socket.io server (tsx `server.ts`).
 - `npm run build` — Next build.
 - `npm run start` — production start (uses `NODE_ENV=production tsx server.ts`).
+- `npm run test:e2e` — run E2E test suite (requires dev server running). See `testing/README.md` for details.
 - `npm run db:push` — apply Prisma schema to SQLite.
 - `npm run db:studio` — Prisma Studio.
 - `npm run lint` — Next lint.
@@ -93,7 +94,7 @@ docker compose logs -f   # wait for "Ready on http://localhost:3000"
 │  ├─ app/                                  # Next.js App Router pages + API routes
 │  │  ├─ page.tsx                           # Landing page
 │  │  ├─ menu/                              # Menu selection screen
-│  │  ├─ play/[gameCode]/page.tsx           # Player join/answer view (public)
+│  │  ├─ play/[gameCode]/page.tsx           # Player game orchestrator (optimized with memoized components)
 │  │  ├─ host/[gameCode]/{display,control,playermonitor}/page.tsx # Host display + control panels
 │  │  ├─ admin/                             # Admin dashboard and tools
 │  │  │  ├─ page.tsx                        # Admin home
@@ -113,6 +114,13 @@ docker compose logs -f   # wait for "Ready on http://localhost:3000"
 │  ├─ components/                           # UI primitives + domain components
 │  │  ├─ ui/                                # shadcn-based primitives (buttons, dialog, tabs, etc.)
 │  │  ├─ landing/                           # Marketing/landing sections
+│  │  ├─ play/                              # Player game screen components (React.memo optimized)
+│  │  │  ├─ ErrorStates.tsx                 # 9 unified error/loading states (admission, connection, etc.)
+│  │  │  ├─ JoinScreen.tsx                  # Player join form with avatar & language selection
+│  │  │  ├─ WaitingLobby.tsx                # Pre-game lobby with rules and power-up info
+│  │  │  ├─ SectionView.tsx                 # Section slide display between questions
+│  │  │  ├─ QuestionView.tsx                # Main question/answer interface with power-ups
+│  │  │  └─ ScoreboardView.tsx              # Live leaderboard and final results with certificates
 │  │  ├─ quiz/                              # Quiz editing + player inputs
 │  │  │  ├─ editor/                         # Question/section modals
 │  │  │  ├─ questions/                      # Question list and stats
@@ -138,6 +146,14 @@ docker compose logs -f   # wait for "Ready on http://localhost:3000"
 ├─ prisma/schema.prisma                     # Database schema
 ├─ data/                                    # SQLite database location (gitignored)
 ├─ scripts/                                 # Setup/maintenance scripts (setup, cleanup-old-games, contrast checks)
+├─ testing/                                 # E2E and unit test suite
+│  ├─ e2e/                                  # Playwright E2E tests (56 tests covering full game flows)
+│  │  ├─ helpers/test-helpers.ts            # Shared test utilities for player/host simulation
+│  │  ├─ final-working.spec.ts              # Golden test: 5 players, 3 questions, all features
+│  │  ├─ stress-test.spec.ts                # Load testing with configurable player counts
+│  │  └─ [other test files]                 # Quiz management, gameplay, translations, etc.
+│  ├─ playwright.config.ts                  # Playwright configuration
+│  └─ README.md                             # Testing documentation and usage
 ├─ server.ts                                # Custom Next.js + Socket.io entrypoint
 ├─ list-players.ts                          # Utility to list currently connected players from the socket server
 ├─ docker-compose.yml, Dockerfile           # Container build/run setup

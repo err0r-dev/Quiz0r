@@ -113,6 +113,7 @@ model GameSession {
 
   @@index([gameCode])
   @@index([status])
+  @@index([status, createdAt])
 }
 
 // Player in a game session
@@ -142,6 +143,8 @@ model Player {
 
   @@unique([gameSessionId, name])
   @@index([gameSessionId])
+  @@index([gameSessionId, admissionStatus])
+  @@index([gameSessionId, isActive])
 }
 
 // Player's answer to a question
@@ -163,6 +166,7 @@ model PlayerAnswer {
   @@unique([playerId, questionId])
   @@index([playerId])
   @@index([questionId])
+  @@index([questionId, playerId])
 }
 
 // Easter egg click tracking

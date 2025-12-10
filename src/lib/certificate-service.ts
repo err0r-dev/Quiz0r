@@ -102,8 +102,8 @@ export class CertificateService {
       certificateIds.push(playerCert.id);
     }
 
-    // Generate certificates in batches (5 concurrent max)
-    const BATCH_SIZE = 5;
+    // Generate certificates in batches (optimized for performance)
+    const BATCH_SIZE = 12;
     let completed = 0;
     let failed = 0;
     const failedCertificates: string[] = [];
@@ -336,8 +336,8 @@ export class CertificateService {
       data: { status: "pending", errorMessage: null, retryCount: 0 },
     });
 
-    // Generate certificates in batches
-    const BATCH_SIZE = 5;
+    // Generate certificates in batches (optimized for performance)
+    const BATCH_SIZE = 12;
     for (let i = 0; i < certificateIds.length; i += BATCH_SIZE) {
       const batch = certificateIds.slice(i, i + BATCH_SIZE);
       await Promise.allSettled(

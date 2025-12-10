@@ -4,36 +4,19 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
 import { useQuizPreloader } from "@/hooks/useQuizPreloader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { PowerUpType, PlayerPowerUpState, SupportedLanguages, type LanguageCode, type QuestionDataWithTranslations, type PlayerViewState } from "@/types";
-import { Check, X, Trophy, Medal, Award, Loader2, Upload, Layers, Bell, UserX, Zap, Lightbulb, Users, Sparkles, Languages as LanguagesIcon, AlarmClock, Globe, ChevronUp, Target } from "lucide-react";
-import { ThemeProvider, getAnswerColor, getSelectedAnswerStyle } from "@/components/theme/ThemeProvider";
+import { Loader2 } from "lucide-react";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { BackgroundEffects } from "@/components/theme/BackgroundEffects";
-import {
-  CertificateDownloadButton,
-  type CertificateButtonState,
-} from "@/components/certificate/CertificateDownloadButton";
-import { BORDER_RADIUS_MAP, SHADOW_MAP } from "@/types/theme";
-import { getContrastingTextColor } from "@/lib/color-utils";
+import { type CertificateButtonState } from "@/components/certificate/CertificateDownloadButton";
+
+// Extracted play screen components (optimization: reduce re-renders)
+import { ErrorStates } from "@/components/play/ErrorStates";
+import { JoinScreen } from "@/components/play/JoinScreen";
+import { WaitingLobby } from "@/components/play/WaitingLobby";
+import { SectionView } from "@/components/play/SectionView";
+import { QuestionView } from "@/components/play/QuestionView";
+import { ScoreboardView } from "@/components/play/ScoreboardView";
 
 export default function PlayerGamePage({
   params,
@@ -653,698 +636,112 @@ export default function PlayerGamePage({
 
   // Player waiting for admission (pending status)
   if (joined && gameState && !gameState.players.some(p => p.name.toLowerCase() === playerName.toLowerCase())) {
-    const theme = gameState?.quizTheme || joinTheme;
-    return (
-      <ThemeProvider theme={theme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen flex items-center justify-center p-4 relative"
-          style={{
-            background: theme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={theme} />
-          <Card className="w-full max-w-sm relative z-10 shadow-2xl border-2 border-yellow-500">
-            <CardContent className="pt-6 text-center">
-              <Bell className="w-12 h-12 mx-auto text-yellow-500 mb-4" />
-              <p className="text-lg font-bold mb-2">Waiting for Admission</p>
-              <p className="text-muted-foreground">
-                {playerRemoved
-                  ? "You were removed from this game. Your request to rejoin is pending host approval."
-                  : "Your request to join is pending host approval."}
-              </p>
-              <div className="mt-4 flex items-center justify-center gap-2">
-                <div className="animate-pulse flex gap-1">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full animation-delay-200"></div>
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full animation-delay-400"></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </ThemeProvider>
-    );
+    return <ErrorStates state={{ type: "admissionPending" }} theme={gameState?.quizTheme || joinTheme} screenRef={screenRef} />;
   }
 
   // Admission refused
   if (admissionStatus === "refused") {
-    const theme = gameState?.quizTheme || joinTheme;
-    return (
-      <ThemeProvider theme={theme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen flex items-center justify-center p-4 relative"
-          style={{
-            background: theme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={theme} />
-          <Card className="w-full max-w-sm relative z-10 shadow-2xl border-2 border-destructive">
-            <CardContent className="pt-6 text-center">
-              <UserX className="w-12 h-12 mx-auto text-destructive mb-4" />
-              <p className="text-lg font-bold text-destructive mb-2">Admission Refused</p>
-              <p className="text-muted-foreground">
-                The host has refused your request to join this game. Please contact the game host.
-              </p>
-              <Button
-                onClick={() => router.push("/play")}
-                className="mt-6"
-                variant="outline"
-              >
-                Join Another Game
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </ThemeProvider>
-    );
+    return <ErrorStates state={{ type: "admissionRefused" }} theme={gameState?.quizTheme || joinTheme} screenRef={screenRef} />;
   }
 
   // Player removed (initial removal screen)
   if (playerRemoved && admissionStatus !== "admitted") {
-    const theme = gameState?.quizTheme || joinTheme;
-    return (
-      <ThemeProvider theme={theme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen flex items-center justify-center p-4 relative"
-          style={{
-            background: theme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={theme} />
-          <Card className="w-full max-w-sm relative z-10 shadow-2xl border-2 border-destructive">
-            <CardContent className="pt-6 text-center">
-              <X className="w-12 h-12 mx-auto text-destructive mb-4" />
-              <p className="text-lg font-bold text-destructive mb-2">Removed from Game</p>
-              <p className="text-muted-foreground">
-                {removalReason || "You have been removed from the game. Please contact the game host."}
-              </p>
-              <Button
-                onClick={() => router.push("/play")}
-                className="mt-6"
-                variant="outline"
-              >
-                Join Another Game
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </ThemeProvider>
-    );
+    return <ErrorStates state={{ type: "playerRemoved", reason: removalReason || undefined }} theme={gameState?.quizTheme || joinTheme} screenRef={screenRef} />;
   }
 
   // Game cancelled state
   if (gameCancelled) {
-    const theme = gameState?.quizTheme || joinTheme;
-    return (
-      <ThemeProvider theme={theme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen flex items-center justify-center p-4 relative"
-          style={{
-            background: theme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={theme} />
-          <Card className="w-full max-w-sm relative z-10 shadow-2xl border-2">
-            <CardContent className="pt-6 text-center">
-              <X className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">Game Cancelled</p>
-              <p className="text-muted-foreground mt-2">The host has cancelled this game.</p>
-              <Button onClick={() => router.push("/play")} className="mt-4">
-                Join Another Game
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </ThemeProvider>
-    );
+    return <ErrorStates state={{ type: "gameCancelled" }} theme={gameState?.quizTheme || joinTheme} screenRef={screenRef} />;
   }
 
   // Error state
   if (error) {
-    return (
-      <ThemeProvider theme={joinTheme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen flex items-center justify-center p-4 relative"
-          style={{
-            background: joinTheme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={joinTheme} />
-          <Card className="w-full max-w-sm relative z-10 shadow-2xl border-2">
-            <CardContent className="pt-6 text-center">
-              <X className="w-12 h-12 mx-auto text-destructive mb-4" />
-              <p className="text-lg font-medium text-destructive">{error}</p>
-              <Button onClick={() => router.push("/play")} className="mt-4">
-                Try Another Code
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </ThemeProvider>
-    );
+    return <ErrorStates state={{ type: "error", message: error }} theme={joinTheme} screenRef={screenRef} />;
   }
 
   // Loading state while checking game
   if (!joined && gameStatus === "loading") {
-    return (
-      <ThemeProvider theme={joinTheme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen flex items-center justify-center p-4 relative"
-          style={{
-            background: joinTheme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={joinTheme} />
-          <Card className="w-full max-w-sm relative z-10 shadow-2xl border-2">
-            <CardContent className="pt-6 text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-              <p className="text-muted-foreground">Checking game...</p>
-            </CardContent>
-          </Card>
-        </div>
-      </ThemeProvider>
-    );
+    return <ErrorStates state={{ type: "loading", message: "Checking game..." }} theme={joinTheme} screenRef={screenRef} />;
   }
 
   // Game not found
   if (!joined && gameStatus === "not_found") {
-    return (
-      <ThemeProvider theme={joinTheme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen flex items-center justify-center p-4 relative"
-          style={{
-            background: joinTheme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={joinTheme} />
-          <Card className="w-full max-w-sm relative z-10 shadow-2xl border-2">
-            <CardContent className="pt-6 text-center">
-              <X className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">Game Not Found</p>
-              <p className="text-muted-foreground mt-2">
-                This game code doesn&apos;t exist. Please check the code and try again.
-              </p>
-              <Button onClick={() => router.push("/play")} className="mt-4">
-                Enter Different Code
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </ThemeProvider>
-    );
+    return <ErrorStates state={{ type: "gameNotFound" }} theme={joinTheme} screenRef={screenRef} />;
   }
 
   // Game has ended or is in progress
   if (!joined && gameStatus === "ended") {
-    return (
-      <ThemeProvider theme={joinTheme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen flex items-center justify-center p-4 relative"
-          style={{
-            background: joinTheme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={joinTheme} />
-          <Card className="w-full max-w-sm relative z-10 shadow-2xl border-2">
-            <CardContent className="pt-6 text-center">
-              <X className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">Game Has Ended</p>
-              <p className="text-muted-foreground mt-2">
-                This game is no longer accepting new players.
-              </p>
-              <Button onClick={() => router.push("/play")} className="mt-4">
-                Join Another Game
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </ThemeProvider>
-    );
+    return <ErrorStates state={{ type: "gameEnded" }} theme={joinTheme} screenRef={screenRef} />;
   }
 
   // Not joined yet - show name entry (only if game is valid)
   if (!joined) {
     return (
-      <ThemeProvider theme={joinTheme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen flex items-center justify-center p-4 relative"
-          style={{
-            background: joinTheme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={joinTheme} />
-          <Card className="w-full max-w-sm relative z-10 shadow-2xl border-2">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Join Game</CardTitle>
-              <p className="text-muted-foreground font-mono text-lg">{gameCode}</p>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleJoin} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Your Name</label>
-                  <Input
-                    type="text"
-                    placeholder="Enter your name..."
-                    value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value.slice(0, 20))}
-                    className="text-center text-lg h-12"
-                    maxLength={20}
-                    autoFocus
-                    disabled={joining}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Choose Your Avatar</label>
-
-                  {/* Avatar Preview */}
-                  {(avatarImage || selectedEmoji) && (
-                    <div className="flex justify-center mb-2">
-                      <div className="relative">
-                        {avatarImage ? (
-                          <img
-                            src={avatarImage}
-                            alt="Avatar"
-                            className="w-16 h-16 rounded-full object-cover ring-2 ring-primary"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-3xl ring-2 ring-primary">
-                            {selectedEmoji}
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAvatarImage(null);
-                            setSelectedEmoji(null);
-                          }}
-                          className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-white rounded-full flex items-center justify-center text-xs hover:bg-destructive/80"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Upload Image Button */}
-                  <div className="flex justify-center mb-2">
-                    <label
-                      className={`
-                        flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer
-                        border-2 border-dashed border-muted-foreground/30 hover:border-primary
-                        transition-colors
-                        ${uploadingImage ? "opacity-50 cursor-not-allowed" : ""}
-                        ${avatarImage ? "bg-primary/10 border-primary" : ""}
-                      `}
-                    >
-                      {uploadingImage ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Upload className="w-4 h-4" />
-                      )}
-                      <span className="text-sm">
-                        {uploadingImage ? "Uploading..." : avatarImage ? "Change Image" : "Upload Image"}
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/gif,image/webp"
-                        onChange={handleImageUpload}
-                        disabled={joining || uploadingImage}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-
-                  <p className="text-xs text-center text-muted-foreground mb-2">or pick an emoji</p>
-
-                  <div className="grid grid-cols-8 gap-2">
-                    {avatarEmojis.map((emoji) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => {
-                          setSelectedEmoji(selectedEmoji === emoji ? null : emoji);
-                          setAvatarImage(null); // Clear image when emoji is selected
-                        }}
-                        disabled={joining}
-                        className={`
-                          text-2xl p-2 rounded-lg transition-all
-                          ${selectedEmoji === emoji && !avatarImage
-                            ? "bg-primary/20 ring-2 ring-primary scale-110"
-                            : "hover:bg-muted"
-                          }
-                        `}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Language Selector */}
-                {availableLanguages.length > 1 && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <LanguagesIcon className="w-4 h-4" />
-                      Select Quiz Questions/Answer Language
-                    </label>
-                    <Select
-                      value={selectedLanguage}
-                      onValueChange={(value) => setSelectedLanguage(value as LanguageCode)}
-                      disabled={joining}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue>
-                          {SupportedLanguages[selectedLanguage].flag} {SupportedLanguages[selectedLanguage].nativeName}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableLanguages.map((langCode) => (
-                          <SelectItem key={langCode} value={langCode}>
-                            <span className="flex items-center gap-2">
-                              {SupportedLanguages[langCode].flag} {SupportedLanguages[langCode].nativeName}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {joinError && (
-                  <p className="text-sm text-destructive text-center">
-                    {joinError}
-                  </p>
-                )}
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full"
-                  disabled={joining}
-                >
-                  {joining ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Joining...
-                    </>
-                  ) : (
-                    "Join"
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      </ThemeProvider>
+      <JoinScreen
+        gameCode={gameCode}
+        theme={joinTheme}
+        playerName={playerName}
+        selectedEmoji={selectedEmoji}
+        avatarImage={avatarImage}
+        onAvatarImageChange={setAvatarImage}
+        uploadingImage={uploadingImage}
+        selectedLanguage={selectedLanguage}
+        availableLanguages={availableLanguages}
+        joinError={joinError}
+        joining={joining}
+        onPlayerNameChange={(name) => setPlayerName(name.slice(0, 20))}
+        onEmojiSelect={(emoji) => {
+          setSelectedEmoji(selectedEmoji === emoji ? null : emoji);
+          setAvatarImage(null);
+        }}
+        onImageUpload={handleImageUpload}
+        onLanguageChange={(lang) => setSelectedLanguage(lang as LanguageCode)}
+        onJoin={handleJoin}
+        screenRef={screenRef}
+      />
     );
   }
 
   // Connecting
   if (!connected || !gameState) {
-    const theme = joinTheme;
-    return (
-      <ThemeProvider theme={theme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen flex items-center justify-center relative"
-          style={{
-            background: theme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={theme} />
-          <div className="text-center relative z-10">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-muted-foreground">Connecting to game...</p>
-          </div>
-        </div>
-      </ThemeProvider>
-    );
+    return <ErrorStates state={{ type: "connecting" }} theme={joinTheme} screenRef={screenRef} />;
   }
 
   // Waiting for game to start
   if (gameState.status === "WAITING") {
     const playerAvatar = avatarImage || selectedEmoji;
-    const theme = gameState.quizTheme;
-    const powerUpConfig = gameState.powerUps || {
-      hintCount: 0,
-      copyAnswerCount: 0,
-      doublePointsCount: 0,
-    };
-    const hasPowerUps =
-      powerUpConfig.hintCount > 0 ||
-      powerUpConfig.copyAnswerCount > 0 ||
-      powerUpConfig.doublePointsCount > 0;
     return (
-      <ThemeProvider theme={theme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen relative overflow-hidden"
-          style={{
-            background: theme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={theme} />
-          <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-            <div className="text-center mb-8 space-y-2">
-              <p className="text-xs uppercase tracking-[0.3em] text-primary/80">Lobby</p>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
-                {gameState.quizTitle || "Get ready for the quiz"}
-              </h1>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                Warm up while we set the stage. Here&apos;s how to score big and use your power-ups wisely.
-              </p>
-            </div>
-
-            <div className="grid lg:grid-cols-[1fr,1.15fr] gap-4 sm:gap-6 items-start">
-              <Card className="border-2 shadow-2xl bg-card/80 backdrop-blur-sm">
-                <CardContent className="p-6 sm:p-7 space-y-5">
-                  <div className="flex flex-col items-center gap-4 text-center">
-                    {playerAvatar ? (
-                      playerAvatar.startsWith("/") ? (
-                        <img
-                          src={playerAvatar}
-                          alt="Avatar"
-                          className="w-20 h-20 rounded-full object-cover ring-2 ring-primary shadow-lg"
-                        />
-                      ) : (
-                        <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center text-4xl ring-2 ring-primary/60 shadow-inner">
-                          {playerAvatar}
-                        </div>
-                      )
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center ring-2 ring-primary/60 shadow-inner">
-                        <Check className="w-10 h-10 text-primary" />
-                      </div>
-                    )}
-                    <div className="space-y-1">
-                      <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">You&apos;re in</p>
-                      <h2 className="text-2xl sm:text-3xl font-bold">{playerName}</h2>
-                      <p className="text-muted-foreground">
-                        Waiting for the host to start the game...
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-xl border border-border/60 bg-primary/10 px-4 py-3 text-left shadow-inner">
-                      <p className="text-xs uppercase tracking-wide text-primary/80">Players joined</p>
-                      <p className="text-2xl font-bold tabular-nums">
-                        {gameState.players.length}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-border/60 bg-card/70 px-4 py-3 text-left shadow-inner">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Room code</p>
-                      <p className="text-2xl font-bold tabular-nums">{gameCode.toUpperCase()}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <div className="space-y-4 sm:space-y-5">
-                <div
-                  className="rounded-2xl border border-border/70 shadow-xl overflow-hidden"
-                  style={{
-                    background: theme?.gradients?.sectionSlide || 'linear-gradient(135deg, hsl(262 83% 16%) 0%, hsl(262 83% 10%) 100%)',
-                  }}
-                >
-                  <div className="p-6 sm:p-7 space-y-4 text-left">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.25em] text-primary/80">How to play</p>
-                        <h3 className="text-xl sm:text-2xl font-semibold">Rules &amp; scoring</h3>
-                      </div>
-                      <div className="h-12 w-12 rounded-full bg-primary/15 text-primary flex items-center justify-center shadow-inner">
-                        <Trophy className="w-6 h-6" />
-                      </div>
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
-                      <div className="rounded-xl border border-white/10 bg-black/10 px-4 py-3 space-y-1 backdrop-blur-sm">
-                        <div className="flex items-center gap-2 text-sm font-semibold">
-                          <AlarmClock className="w-4 h-4" />
-                          Beat the clock
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          Timer counts down each question. Single choice locks in instantly; multi-select needs Submit before zero.
-                        </p>
-                      </div>
-
-                      <div className="rounded-xl border border-white/10 bg-black/10 px-4 py-3 space-y-1 backdrop-blur-sm">
-                        <div className="flex items-center gap-2 text-sm font-semibold">
-                          <Zap className="w-4 h-4" />
-                          Speed bonus
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          Every question has base points. Answering instantly can add up to +50% bonus; slower answers earn less.
-                        </p>
-                      </div>
-
-                      <div className="rounded-xl border border-white/10 bg-black/10 px-4 py-3 space-y-1 backdrop-blur-sm">
-                        <div className="flex items-center gap-2 text-sm font-semibold">
-                          <Target className="w-4 h-4" />
-                          Multi-select fairness
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          Points scale with accuracy: (correct picks − wrong picks) / total correct. Wrong or no answer = zero.
-                        </p>
-                      </div>
-
-                      <div className="rounded-xl border border-white/10 bg-black/10 px-4 py-3 space-y-1 backdrop-blur-sm">
-                        <div className="flex items-center gap-2 text-sm font-semibold">
-                          <Sparkles className="w-4 h-4" />
-                          Finish strong
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          Scores update each round and feed the leaderboard. Double Points (when enabled) multiplies after bonuses.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-border/70 bg-card/80 backdrop-blur-sm shadow-xl">
-                  <div className="p-6 sm:p-7 space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-primary" />
-                      <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-                        Power-ups
-                      </p>
-                    </div>
-
-                    {hasPowerUps ? (
-                      <div className="grid sm:grid-cols-3 gap-3">
-                        {powerUpConfig.hintCount > 0 && (
-                          <div className="rounded-xl border border-border/60 bg-primary/10 px-4 py-3 space-y-1">
-                            <div className="flex items-center gap-2 font-semibold text-sm">
-                              <Lightbulb className="w-4 h-4" />
-                              Hint
-                            </div>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              Reveal the question hint (when available). Uses {powerUpConfig.hintCount > 1 ? "one of your " : "your "}limited hints.
-                            </p>
-                            <p className="text-xs font-medium text-primary">
-                              {powerUpConfig.hintCount} ready
-                            </p>
-                          </div>
-                        )}
-
-                        {powerUpConfig.copyAnswerCount > 0 && (
-                          <div className="rounded-xl border border-border/60 bg-primary/10 px-4 py-3 space-y-1">
-                            <div className="flex items-center gap-2 font-semibold text-sm">
-                              <Users className="w-4 h-4" />
-                              Copy
-                            </div>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              Pick a teammate and mirror their answer. If they don&apos;t answer in time, you miss out too.
-                            </p>
-                            <p className="text-xs font-medium text-primary">
-                              {powerUpConfig.copyAnswerCount} ready
-                            </p>
-                          </div>
-                        )}
-
-                        {powerUpConfig.doublePointsCount > 0 && (
-                          <div className="rounded-xl border border-border/60 bg-primary/10 px-4 py-3 space-y-1">
-                            <div className="flex items-center gap-2 font-semibold text-sm">
-                              <Sparkles className="w-4 h-4" />
-                              2x Points
-                            </div>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              Doubles your score for that question after speed and accuracy are calculated.
-                            </p>
-                            <p className="text-xs font-medium text-primary">
-                              {powerUpConfig.doublePointsCount} ready
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-border/70 px-4 py-5 text-sm text-muted-foreground text-center">
-                        The host hasn&apos;t enabled power-ups for this game—focus on speed and accuracy.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </ThemeProvider>
+      <WaitingLobby
+        quizTitle={gameState.quizTitle || "Get ready for the quiz"}
+        playerName={playerName}
+        playerAvatar={playerAvatar}
+        gameCode={gameCode}
+        playerCount={gameState.players.length}
+        powerUps={gameState.powerUps || { hintCount: 0, copyAnswerCount: 0, doublePointsCount: 0 }}
+        theme={gameState.quizTheme}
+        screenRef={screenRef}
+      />
     );
   }
 
   // Section view - players just see the section slide
   if (gameState.status === "SECTION" && effectiveCurrentQuestion) {
-    const theme = gameState.quizTheme;
     return (
-      <ThemeProvider theme={theme}>
-            <div
-              ref={screenRef}
-              className="min-h-screen flex items-center justify-center p-4 relative"
-              style={{
-                background: theme?.gradients?.sectionSlide || 'linear-gradient(135deg, hsl(0 0% 35%) 0%, hsl(0 0% 25%) 100%)',
-              }}
-            >
-              <BackgroundEffects theme={theme} />
-              <div className="text-center text-white relative z-10 px-4 max-w-2xl mx-auto">
-                <Layers className="w-12 h-12 mx-auto mb-4 opacity-80" />
-                <h1 className="text-3xl font-bold mb-4">
-                  {getTranslatedContent(
-                    effectiveCurrentQuestion.questionText,
-                    effectiveCurrentQuestion.translations,
-                    "questionText"
-                  )}
-                </h1>
-                {effectiveCurrentQuestion.hostNotes && (
-                  <p className="text-lg opacity-90 mb-6">
-                    {getTranslatedContent(
-                      effectiveCurrentQuestion.hostNotes,
-                      effectiveCurrentQuestion.translations,
-                      "hostNotes"
-                    )}
-                  </p>
-                )}
-            {effectiveCurrentQuestion.imageUrl && (
-              <img
-                src={effectiveCurrentQuestion.imageUrl}
-                alt="Section"
-                className="max-h-48 mx-auto rounded-xl shadow-lg mb-6"
-              />
-            )}
-            <p className="text-sm opacity-70">
-              Waiting for host to continue...
-            </p>
-          </div>
-        </div>
-      </ThemeProvider>
+      <SectionView
+        sectionTitle={getTranslatedContent(
+          effectiveCurrentQuestion.questionText,
+          effectiveCurrentQuestion.translations,
+          "questionText"
+        )}
+        sectionNotes={effectiveCurrentQuestion.hostNotes ? getTranslatedContent(
+          effectiveCurrentQuestion.hostNotes,
+          effectiveCurrentQuestion.translations,
+          "hostNotes"
+        ) : null}
+        imageUrl={effectiveCurrentQuestion.imageUrl}
+        theme={gameState.quizTheme}
+        screenRef={screenRef}
+      />
     );
   }
 
@@ -1355,498 +752,45 @@ export default function PlayerGamePage({
   ) {
     const isRevealing = gameState.status === "REVEALING";
     const correctIds = questionEnded?.correctAnswerIds || [];
-    const theme = gameState.quizTheme;
-
-    if (isRevealing && awaitingReveal) {
-      return (
-        <ThemeProvider theme={theme}>
-          <BackgroundEffects theme={theme} />
-          <div
-            ref={screenRef}
-            className="min-h-screen flex flex-col items-center justify-center text-center px-6"
-            style={{
-              background: theme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-            }}
-          >
-            <div className="flex flex-col items-center gap-4 text-amber-200">
-              <AlarmClock className="w-14 h-14 animate-bounce" />
-              <h2 className="text-3xl font-bold text-white">Time&apos;s up!</h2>
-              <p className="text-lg text-amber-100/80 max-w-xl">
-                The host will reveal the answers shortly. Sit tight!
-              </p>
-            </div>
-          </div>
-        </ThemeProvider>
-      );
-    }
 
     return (
-      <ThemeProvider theme={theme}>
-        <BackgroundEffects theme={theme} />
-        <div
-          ref={screenRef}
-          className="min-h-screen flex flex-col overflow-x-hidden"
-          style={{
-            background: theme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          {/* Top bar: Timer only - more prominent (hidden during reveal) */}
-          {!isRevealing && (
-            <div className="px-3 sm:px-6 pt-3 sm:pt-4">
-              <div className="flex flex-col gap-2 rounded-xl bg-card/80 backdrop-blur-sm border border-border/60 px-4 py-3 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Question {gameState.currentQuestionNumber} of {gameState.totalQuestions}
-                  </span>
-                  <div className={`
-                    flex items-center gap-2 px-3 py-1 rounded-full font-bold text-lg tabular-nums
-                    ${timeRemaining <= 5
-                      ? "bg-red-500/20 text-red-500 animate-pulse"
-                      : timeRemaining <= 10
-                        ? "bg-amber-500/20 text-amber-500"
-                        : "bg-primary/20 text-primary"}
-                  `}>
-                    <AlarmClock className="w-4 h-4" />
-                    {timeRemaining}s
-                  </div>
-                </div>
-                {effectiveCurrentQuestion && (
-                  <Progress
-                    value={(timeRemaining / effectiveCurrentQuestion.timeLimit) * 100}
-                    className={`h-2.5 ${timeRemaining <= 5 ? "[&>div]:bg-red-500" : timeRemaining <= 10 ? "[&>div]:bg-amber-500" : ""}`}
-                  />
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Question */}
-          <div className="px-3 sm:px-8 py-3 sm:py-4">
-            <h2 className="text-lg sm:text-xl font-bold text-center mb-2 leading-tight">
-              {getTranslatedContent(
-                effectiveCurrentQuestion?.questionText,
-                effectiveCurrentQuestion?.translations,
-                "questionText"
-              )}
-            </h2>
-            {effectiveCurrentQuestion?.imageUrl && (
-              <img
-                src={effectiveCurrentQuestion.imageUrl}
-                alt="Question"
-                className="max-h-24 sm:max-h-32 w-auto mx-auto rounded-lg mb-3 sm:mb-4"
-              />
-            )}
-            {effectiveCurrentQuestion?.questionType === "MULTI_SELECT" && !hasSubmitted && (
-              <p className="text-xs sm:text-sm text-center text-muted-foreground mb-2">
-                Select all that apply
-              </p>
-            )}
-          </div>
-
-          {/* Answer Result (shown during revealing) */}
-          {isRevealing && answerResult && (
-            <div
-              className={`mx-8 p-4 rounded-lg text-center mb-4 ${
-                answerResult.correct
-                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                  : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-              }`}
-            >
-              <p className="text-2xl font-bold">
-                {answerResult.correct ? "Correct!" : "Wrong!"}
-              </p>
-              <p className="text-lg">+{answerResult.points} points</p>
-              <p className="text-sm">Position: #{answerResult.position}</p>
-            </div>
-          )}
-
-          {/* Power-ups Section */}
-          {gameState.status === "QUESTION" && !hasSubmitted && (powerUpState.hintsRemaining > 0 || powerUpState.copyRemaining > 0 || powerUpState.doubleRemaining > 0) && (
-            <div className="px-3 sm:px-8 py-3 sm:py-4 border-t border-border">
-              <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                <Zap className="w-4 h-4" />
-                <span className="text-xs sm:text-sm font-medium">Power-ups</span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                {/* Hint Power-up */}
-                {powerUpState.hintsRemaining > 0 && (
-                  <Button
-                    variant={selectedPowerUps.has(PowerUpType.HINT) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePowerUpToggle(PowerUpType.HINT)}
-                    disabled={powerUpState.usedThisQuestion.has(PowerUpType.HINT)}
-                    className="flex flex-col h-auto py-2 px-1 sm:px-2 min-h-[68px] sm:min-h-[76px]"
-                  >
-                    <Lightbulb className="w-5 h-5 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" />
-                    <span className="text-[10px] sm:text-xs">Hint</span>
-                    <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
-                      {powerUpState.hintsRemaining} left
-                    </span>
-                  </Button>
-                )}
-
-                {/* Copy Answer Power-up */}
-                {powerUpState.copyRemaining > 0 && (
-                  <Button
-                    variant={selectedPowerUps.has(PowerUpType.COPY) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePowerUpToggle(PowerUpType.COPY)}
-                    disabled={powerUpState.usedThisQuestion.has(PowerUpType.COPY)}
-                    className="flex flex-col h-auto py-2 px-1 sm:px-2 min-h-[68px] sm:min-h-[76px]"
-                  >
-                    <Users className="w-5 h-5 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" />
-                    <span className="text-[10px] sm:text-xs">Copy</span>
-                    <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
-                      {powerUpState.copyRemaining} left
-                    </span>
-                  </Button>
-                )}
-
-                {/* Double Points Power-up */}
-                {powerUpState.doubleRemaining > 0 && (
-                  <Button
-                    variant={selectedPowerUps.has(PowerUpType.DOUBLE) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePowerUpToggle(PowerUpType.DOUBLE)}
-                    disabled={powerUpState.usedThisQuestion.has(PowerUpType.DOUBLE)}
-                    className="flex flex-col h-auto py-2 px-1 sm:px-2 min-h-[68px] sm:min-h-[76px]"
-                  >
-                    <Sparkles className="w-5 h-5 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" />
-                    <span className="text-[10px] sm:text-xs">2x</span>
-                    <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
-                      {powerUpState.doubleRemaining} left
-                    </span>
-                  </Button>
-                )}
-              </div>
-
-              {/* Active Power-ups Feedback */}
-              {(selectedPowerUps.has(PowerUpType.HINT) || selectedPowerUps.has(PowerUpType.COPY) || selectedPowerUps.has(PowerUpType.DOUBLE)) && (
-                <div className="mt-3 space-y-2">
-                  {/* Hint Active Badge */}
-                  {selectedPowerUps.has(PowerUpType.HINT) && (
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Lightbulb className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        <p className="text-xs font-medium text-blue-900 dark:text-blue-100">
-                          Hint Active
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Copy Confirmation */}
-                  {selectedPowerUps.has(PowerUpType.COPY) && copiedPlayerId && (
-                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                        <p className="text-xs font-medium text-purple-900 dark:text-purple-100">
-                          Copy Active - Will copy from {gameState.players.find(p => p.id === copiedPlayerId)?.name || 'selected player'}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Double Points Confirmation */}
-                  {selectedPowerUps.has(PowerUpType.DOUBLE) && (
-                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                        <p className="text-xs font-medium text-amber-900 dark:text-amber-100">
-                          Double Points Active - Your score will be doubled!
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Answers */}
-          <div className="flex-1 px-3 sm:px-8 py-3 sm:py-4 space-y-2 sm:space-y-3">
-            {effectiveCurrentQuestion?.answers.map((answer, index) => {
-              const isSelected = selectedAnswers.has(answer.id);
-              const isCorrect = correctIds.includes(answer.id);
-              const wasSelected = isSelected;
-
-              // Determine background color and styling
-              let background: string;
-              let textColor: string;
-              let additionalStyles: React.CSSProperties = {};
-
-              // Get the base answer color (hex) for text color calculation
-              const answerColorHex = getAnswerColor(gameState.quizTheme, index);
-
-              // Apply theme border radius and shadow
-              const borderRadius = gameState.quizTheme?.effects?.borderRadius
-                ? BORDER_RADIUS_MAP[gameState.quizTheme.effects.borderRadius]
-                : BORDER_RADIUS_MAP.lg;
-              const boxShadow = gameState.quizTheme?.effects?.shadow
-                ? SHADOW_MAP[gameState.quizTheme.effects.shadow]
-                : SHADOW_MAP.md;
-
-              additionalStyles.borderRadius = borderRadius;
-              additionalStyles.boxShadow = boxShadow;
-              additionalStyles.transformOrigin = 'center';
-              additionalStyles.willChange = 'transform';
-
-              if (isRevealing) {
-                if (isCorrect) {
-                  background = gameState.quizTheme?.gradients?.correctAnswer || "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)";
-                  additionalStyles.boxShadow = `0 0 0 4px rgba(34, 197, 94, 0.3), ${boxShadow}`;
-                  textColor = "0 0% 100%"; // White text on green gradient
-                } else if (wasSelected && !isCorrect) {
-                  background = gameState.quizTheme?.gradients?.wrongAnswer || "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)";
-                  additionalStyles.opacity = 0.5;
-                  textColor = "0 0% 100%"; // White text on red gradient
-                } else {
-                  background = "#9ca3af"; // gray-400
-                  additionalStyles.opacity = 0.5;
-                  textColor = "0 0% 100%"; // White text on gray
-                }
-              } else if (hasSubmitted) {
-                if (isSelected) {
-                  background = answerColorHex;
-                  const selectedStyle = getSelectedAnswerStyle(gameState.quizTheme, true);
-                  Object.assign(additionalStyles, selectedStyle);
-                  textColor = getContrastingTextColor(answerColorHex);
-                } else {
-                  background = "#9ca3af"; // gray-400
-                  additionalStyles.opacity = 0.5;
-                  textColor = "0 0% 100%"; // White text on gray
-                }
-              } else if (isSelected) {
-                background = answerColorHex;
-                const selectedStyle = getSelectedAnswerStyle(gameState.quizTheme, true);
-                Object.assign(additionalStyles, selectedStyle);
-                textColor = getContrastingTextColor(answerColorHex);
-              } else {
-                background = answerColorHex;
-                textColor = getContrastingTextColor(answerColorHex);
-              }
-
-              return (
-                <div key={answer.id} className="px-0.5 sm:px-1">
-                  <button
-                    onClick={() => toggleAnswer(answer.id)}
-                    disabled={hasSubmitted || isRevealing}
-                    className={`
-                      w-full p-3 sm:p-4 text-base sm:text-lg font-medium
-                      transition-all duration-200 flex items-center gap-2 sm:gap-3
-                      min-h-[52px] sm:min-h-[60px]
-                      ${!hasSubmitted && !isRevealing ? "active:scale-[0.98]" : ""}
-                    `}
-                  style={{
-                    background,
-                    maxWidth: '100%',
-                    color: `hsl(${textColor})`,
-                    ...additionalStyles,
-                  }}
-                >
-                  <span className="font-bold text-lg sm:text-xl shrink-0">
-                    {String.fromCharCode(65 + index)}
-                  </span>
-                    <span className="flex-1 text-left break-words hyphens-auto leading-tight">
-                      {getTranslatedContent(
-                        answer.answerText,
-                        answer.translations,
-                        "answerText"
-                      )}
-                    </span>
-                    {isRevealing && isCorrect && <Check className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />}
-                    {isRevealing && wasSelected && !isCorrect && (
-                      <X className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-                    )}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Submit button for multi-select */}
-          {effectiveCurrentQuestion?.questionType === "MULTI_SELECT" &&
-            !hasSubmitted &&
-            !isRevealing && (
-              <div className="px-8 py-4 border-t">
-                <Button
-                  onClick={handleSubmitMultiSelect}
-                  disabled={selectedAnswers.size === 0}
-                  size="lg"
-                  className="w-full"
-                >
-                  Submit Answer ({selectedAnswers.size} selected)
-                </Button>
-              </div>
-            )}
-
-          {/* Easter Egg Button */}
-          {!isRevealing &&
-            gameState.status === "QUESTION" &&
-            effectiveCurrentQuestion?.easterEggEnabled &&
-            effectiveCurrentQuestion.easterEggButtonText &&
-            effectiveCurrentQuestion.easterEggUrl && (
-              <div className="px-8 py-3">
-                <Button
-                  onClick={handleEasterEggClick}
-                  disabled={easterEggClicked.has(effectiveCurrentQuestion.id)}
-                  variant="outline"
-                  className="w-full border-2 border-dashed"
-                >
-                  {easterEggClicked.has(effectiveCurrentQuestion.id) ? (
-                    <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Clicked!
-                    </>
-                  ) : (
-                    <>
-                      {getTranslatedContent(
-                        effectiveCurrentQuestion.easterEggButtonText,
-                        effectiveCurrentQuestion.translations,
-                        "easterEggButtonText"
-                      )}
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-
-          {/* Waiting message after submit */}
-          {hasSubmitted && !isRevealing && (
-            <div className="px-8 py-4 text-center text-muted-foreground">
-              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-              Waiting for time to expire...
-            </div>
-          )}
-
-          {/* Collapsible Language Selector at bottom right */}
-          {availableLanguages.length > 1 && (
-            <div className="fixed bottom-4 right-4 z-20">
-              <div className={`
-                bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-lg
-                transition-all duration-200 overflow-hidden origin-bottom-right
-                ${showLanguageSelector ? "w-64 max-h-[70vh] overflow-y-auto" : "w-auto"}
-              `}>
-                {showLanguageSelector ? (
-                  <div className="p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Select Quiz Questions/Answer Language</span>
-                      <button
-                        onClick={() => setShowLanguageSelector(false)}
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        <ChevronUp className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {availableLanguages.map((langCode) => (
-                        <button
-                          key={langCode}
-                          onClick={() => {
-                            setSelectedLanguage(langCode);
-                            setShowLanguageSelector(false);
-                          }}
-                          className={`
-                            flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-                            transition-colors
-                            ${selectedLanguage === langCode
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted hover:bg-muted/80"}
-                          `}
-                        >
-                          <span>{SupportedLanguages[langCode].flag}</span>
-                          <span className="truncate">{SupportedLanguages[langCode].nativeName}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowLanguageSelector(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
-                  >
-                    <Globe className="w-4 h-4" />
-                    <span>{SupportedLanguages[selectedLanguage].flag}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Hint Modal */}
-        <Dialog open={showHintModal} onOpenChange={setShowHintModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Lightbulb className="w-5 h-5" />
-                Hint
-              </DialogTitle>
-            </DialogHeader>
-            <div className="py-6">
-              <p className="text-lg">
-                {getTranslatedContent(
-                  effectiveCurrentQuestion?.hint,
-                  effectiveCurrentQuestion?.translations,
-                  "hint"
-                )}
-              </p>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setShowHintModal(false)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Copy Player Selector Dialog */}
-        <Dialog open={showCopyPlayerSelector} onOpenChange={setShowCopyPlayerSelector}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Copy Answer
-              </DialogTitle>
-              <DialogDescription>
-                Select a player to copy their answer. This is a blind copy - you won't see their choice.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-2 max-h-96 overflow-y-auto">
-              {gameState?.players
-                .filter(p => p.name !== playerName && p.isActive)
-                .map(player => (
-                  <Button
-                    key={player.id}
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleCopyPlayerSelected(player.id)}
-                  >
-                    <div className="flex items-center gap-2">
-                      {player.avatarEmoji?.startsWith("/") ? (
-                        <img
-                          src={player.avatarEmoji}
-                          alt={player.name}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
-                          style={{ backgroundColor: player.avatarColor }}
-                        >
-                          {player.avatarEmoji || player.name[0]}
-                        </div>
-                      )}
-                      <span>{player.name}</span>
-                    </div>
-                  </Button>
-                ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-      </ThemeProvider>
+      <QuestionView
+        question={effectiveCurrentQuestion! as any}
+        questionNumber={gameState.currentQuestionNumber || 1}
+        totalQuestions={gameState.totalQuestions || 1}
+        timeRemaining={timeRemaining}
+        isRevealing={isRevealing}
+        awaitingReveal={awaitingReveal}
+        hasSubmitted={hasSubmitted}
+        selectedAnswers={selectedAnswers}
+        correctAnswerIds={correctIds}
+        answerResult={answerResult}
+        powerUpState={powerUpState}
+        selectedPowerUps={selectedPowerUps}
+        copiedPlayerId={copiedPlayerId}
+        showHintModal={showHintModal}
+        showCopyPlayerSelector={showCopyPlayerSelector}
+        easterEggClicked={easterEggClicked}
+        selectedLanguage={selectedLanguage}
+        availableLanguages={availableLanguages}
+        showLanguageSelector={showLanguageSelector}
+        players={gameState.players}
+        playerName={playerName}
+        theme={gameState.quizTheme}
+        onToggleAnswer={toggleAnswer}
+        onSubmitMultiSelect={() => submitAnswer(effectiveCurrentQuestion!.id, Array.from(selectedAnswers))}
+        onPowerUpToggle={handlePowerUpToggle}
+        onCopyPlayerSelected={handleCopyPlayerSelected}
+        onEasterEggClick={handleEasterEggClick}
+        onLanguageChange={(lang) => setSelectedLanguage(lang)}
+        onShowHintModalChange={setShowHintModal}
+        onShowCopyPlayerSelectorChange={setShowCopyPlayerSelector}
+        onShowLanguageSelectorChange={setShowLanguageSelector}
+        getTranslatedContent={getTranslatedContent}
+        screenRef={screenRef}
+      />
     );
   }
-
   // Scoreboard
   if (gameState.status === "SCOREBOARD" || gameState.status === "FINISHED") {
     const isFinished = gameState.status === "FINISHED";
@@ -1860,147 +804,24 @@ export default function PlayerGamePage({
             change: 0,
           }));
 
-    const myScore = displayScores.find(
-      (s) => s.name.toLowerCase() === playerName.toLowerCase()
+    const myPlayer = gameState.players.find(
+      (p) => p.name.toLowerCase() === playerName.toLowerCase()
     );
-    const myPosition = myScore?.position || 0;
-    const showGeneratingMessage =
-      certificateState === "checking" || certificateState === "generating";
 
-    const theme = gameState.quizTheme;
     return (
-      <ThemeProvider theme={theme}>
-        <div
-          ref={screenRef}
-          className="min-h-screen p-3 sm:p-4 relative"
-          style={{
-            background: theme?.gradients?.pageBackground || 'linear-gradient(135deg, hsl(0 0% 25%) 0%, hsl(0 0% 15%) 100%)',
-          }}
-        >
-          <BackgroundEffects theme={theme} />
-          {/* My Position */}
-          <Card className="mb-4 sm:mb-6 relative z-10 shadow-xl border-2">
-            <CardContent className="pt-4 sm:pt-6 text-center">
-              {myPosition <= 3 && isFinished && (
-                <div className="mb-2">
-                  {myPosition === 1 && (
-                    <Trophy className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-yellow-500" />
-                  )}
-                  {myPosition === 2 && (
-                    <Medal className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-gray-400" />
-                  )}
-                  {myPosition === 3 && (
-                    <Award className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-amber-600" />
-                  )}
-                </div>
-              )}
-              <p className="text-3xl sm:text-4xl font-bold text-primary">#{myPosition}</p>
-              <p className="text-base sm:text-lg font-medium truncate max-w-full px-2">{playerName}</p>
-              <p className="text-xl sm:text-2xl font-bold mt-2">{myScore?.score || 0} pts</p>
-            </CardContent>
-          </Card>
-
-          {/* Leaderboard */}
-          <h2 className="text-base sm:text-lg font-bold mb-2 sm:mb-3 relative z-10">
-            {isFinished ? "Final Results" : "Leaderboard"}
-          </h2>
-          <div className="space-y-1.5 sm:space-y-2 relative z-10">
-            {displayScores.slice(0, 10).map((player, index) => {
-              const isMe =
-                player.name.toLowerCase() === playerName.toLowerCase();
-              return (
-                <div
-                  key={player.playerId}
-                  className={`
-                    flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg shadow-lg
-                    ${isMe ? "bg-primary/10 ring-2 ring-primary" : "bg-card"}
-                  `}
-                >
-                  <span className="font-bold w-5 sm:w-6 text-center text-sm sm:text-base">{index + 1}</span>
-                  {player.avatarEmoji?.startsWith("/") ? (
-                    <img
-                      src={player.avatarEmoji}
-                      alt={player.name}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shrink-0"
-                    />
-                  ) : (
-                    <Avatar className="w-7 h-7 sm:w-8 sm:h-8 shrink-0">
-                      <AvatarFallback
-                        style={{ backgroundColor: player.avatarEmoji ? "transparent" : player.avatarColor }}
-                        className={player.avatarEmoji ? "text-lg sm:text-xl" : "text-white text-xs"}
-                      >
-                        {player.avatarEmoji || player.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  <span className={`flex-1 truncate text-sm sm:text-base ${isMe ? "font-bold" : ""}`}>
-                    {player.name}
-                    {isMe && " (You)"}
-                  </span>
-
-                  {/* Power-up indicators */}
-                  {"powerUpsUsed" in player && player.powerUpsUsed && player.powerUpsUsed.length > 0 && (
-                    <div className="flex gap-0.5 sm:gap-1 shrink-0">
-                      {player.powerUpsUsed.slice(0, 3).map((usage: { powerUpType: PowerUpType; questionNumber: number }, idx: number) => (
-                        <span
-                          key={idx}
-                          className="text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 bg-muted rounded"
-                          title={`Q${usage.questionNumber}: ${usage.powerUpType}`}
-                        >
-                          {usage.powerUpType === "hint" && "💡"}
-                          {usage.powerUpType === "copy" && "👥"}
-                          {usage.powerUpType === "double" && "⚡"}
-                        </span>
-                      ))}
-                      {player.powerUpsUsed.length > 3 && (
-                        <span className="text-[10px] sm:text-xs text-muted-foreground">+{player.powerUpsUsed.length - 3}</span>
-                      )}
-                    </div>
-                  )}
-
-                  <span className="font-bold text-primary text-sm sm:text-base shrink-0">{player.score}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          {isFinished && (
-            <div className="mt-6 sm:mt-8 text-center space-y-3 sm:space-y-4 relative z-10">
-              <p className="text-sm sm:text-base text-muted-foreground">Thanks for playing!</p>
-
-              {showGeneratingMessage && (
-                <div className="flex items-center justify-center gap-2 text-sm sm:text-base text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Generating your certificate...</span>
-                </div>
-              )}
-
-              <div className="flex flex-col sm:flex-row sm:justify-center sm:items-center gap-3 sm:gap-4">
-                {/* Download Button */}
-                <CertificateDownloadButton
-                  gameCode={gameCode}
-                  playerId={playerId}
-                  playerName={playerName}
-                  type="player"
-                  className={`w-full sm:w-auto ${showGeneratingMessage ? "hidden" : ""}`}
-                  onStateChange={setCertificateState}
-                />
-
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto"
-                  onClick={() => router.push("/play")}
-                >
-                  Play Again
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </ThemeProvider>
+      <ScoreboardView
+        isFinished={isFinished}
+        scores={displayScores}
+        playerName={playerName}
+        gameCode={gameCode}
+        playerId={myPlayer?.id}
+        certificateState={certificateState}
+        onCertificateStateChange={setCertificateState}
+        theme={gameState.quizTheme}
+        screenRef={screenRef}
+      />
     );
   }
-
   // Default loading state
   const theme = gameState?.quizTheme || joinTheme;
   return (
