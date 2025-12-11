@@ -45,6 +45,8 @@ import {
   Lightbulb,
   Sparkles,
   Search,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CertificateDownloadButton } from "@/components/certificate/CertificateDownloadButton";
@@ -498,6 +500,13 @@ export default function HostControlPage({
                   </div>
                 )}
 
+                {gameState.status === "ACTIVE" && (
+                  <div className="space-y-4 text-center py-4">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
+                    <p className="text-muted-foreground">Starting game...</p>
+                  </div>
+                )}
+
                 {gameState.status === "QUESTION" && (
                   <div className="space-y-4">
                     <div className="p-4 bg-muted rounded-lg">
@@ -671,10 +680,17 @@ export default function HostControlPage({
                         <BarChart3 className="w-4 h-4 mr-2" />
                         Show Scoreboard
                       </Button>
-                      <Button onClick={nextQuestion} className="flex-1" disabled={awaitingReveal}>
-                        <SkipForward className="w-4 h-4 mr-2" />
-                        Next Question
-                      </Button>
+                      {gameState.currentQuestionNumber < gameState.totalQuestions ? (
+                        <Button onClick={nextQuestion} className="flex-1" disabled={awaitingReveal}>
+                          <SkipForward className="w-4 h-4 mr-2" />
+                          Next Question
+                        </Button>
+                      ) : (
+                        <Button onClick={endGame} variant="destructive" className="flex-1" disabled={awaitingReveal}>
+                          <Square className="w-4 h-4 mr-2" />
+                          End Game
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -733,8 +749,7 @@ export default function HostControlPage({
                         )}
                       </div>
                     )}
-                    {gameState.currentQuestionIndex <
-                    gameState.totalQuestions - 1 ? (
+                    {gameState.currentQuestionNumber < gameState.totalQuestions ? (
                       <Button onClick={nextQuestion} size="lg" className="w-full" disabled={awaitingReveal}>
                         <SkipForward className="w-4 h-4 mr-2" />
                         Next Question
@@ -776,6 +791,27 @@ export default function HostControlPage({
                         Start New Game
                       </Button>
                     </Link>
+                  </div>
+                )}
+
+                {/* Fallback for unexpected status */}
+                {!["WAITING", "ACTIVE", "QUESTION", "SECTION", "REVEALING", "SCOREBOARD", "FINISHED"].includes(gameState.status) && (
+                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg space-y-3">
+                    <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                      <AlertTriangle className="w-5 h-5" />
+                      <span className="font-medium">Unexpected game state: {gameState.status}</span>
+                    </div>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      The game entered an unexpected state. Try refreshing the page or ending the game.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+                        Refresh Page
+                      </Button>
+                      <Button onClick={endGame} variant="destructive" size="sm">
+                        End Game
+                      </Button>
+                    </div>
                   </div>
                 )}
 
