@@ -16,6 +16,7 @@
   "build": {
     "appId": "dev.err0r.quiz0r",
     "productName": "Quiz0r",
+    "electronDist": "node_modules/electron/dist",
     "files": [
       "**/*"
     ],
@@ -41,9 +42,7 @@
       "entitlementsInherit": "entitlements.mac.inherit.plist",
       "identity": "Developer ID Application",
       "notarize": {
-        "teamId": "${env:APPLE_TEAM_ID}",
-        "appleId": "${env:APPLEID}",
-        "appleIdPassword": "${env:APPLEIDPASS}"
+        "appBundleId": "dev.err0r.quiz0r"
       }
     },
     "win": {

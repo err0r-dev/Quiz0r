@@ -71,6 +71,25 @@ const binName = process.platform === 'win32' ? 'electron-builder.cmd' : 'electro
 const builderBin = path.resolve(__dirname, '..', 'node_modules', '.bin', binName);
 const hasConfigArg = args.some((arg) => arg === '--config' || arg.startsWith('--config='));
 
+const repoRoot = path.resolve(__dirname, '..', '..');
+const nextStandaloneDir = path.join(repoRoot, '.next', 'standalone');
+const nextStaticDir = path.join(repoRoot, '.next', 'static');
+
+const runOrExit = (command, commandArgs, options) => {
+  const result = spawnSync(command, commandArgs, { stdio: 'inherit', ...options });
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
+};
+
+console.log('\nRunning Next.js production build for Electron packaging...');
+runOrExit('npm', ['run', 'build'], { cwd: repoRoot, env: { ...process.env, NODE_ENV: 'production' } });
+
+if (!fs.existsSync(nextStandaloneDir) || !fs.existsSync(nextStaticDir)) {
+  console.error('Next.js build output missing (.next/standalone or .next/static) after build.');
+  process.exit(1);
+}
+
 if (!hasConfigArg) {
   configPath = path.join(os.tmpdir(), `electron-builder-config-${Date.now()}.json`);
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
