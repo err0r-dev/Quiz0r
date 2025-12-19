@@ -101,6 +101,11 @@ if (buildingMac && !resolveFromElectron('dmg-license')) {
   runOrExit('npm', ['install', '--include=optional', '--no-save', 'dmg-license'], { cwd: electronDir });
 }
 
+if (!fs.existsSync(builderBin)) {
+  console.log('\nElectron build dependencies missing. Installing...');
+  runOrExit('npm', ['install'], { cwd: path.resolve(__dirname, '..') });
+}
+
 const repoRoot = path.resolve(__dirname, '..', '..');
 const nextStandaloneDir = path.join(repoRoot, '.next', 'standalone');
 const nextStaticDir = path.join(repoRoot, '.next', 'static');
