@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: "standalone",
   experimental: {
     // Externalize @ngrok/ngrok to avoid webpack bundling native modules
     serverComponentsExternalPackages: ["@ngrok/ngrok"],
