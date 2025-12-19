@@ -19,6 +19,20 @@
     "files": [
       "**/*"
     ],
+    "extraResources": [
+      {
+        "from": "../.next/standalone",
+        "to": "next/standalone"
+      },
+      {
+        "from": "../.next/static",
+        "to": "next/static"
+      },
+      {
+        "from": "../public",
+        "to": "next/public"
+      }
+    ],
     "mac": {
       "target": "dmg",
       "category": "public.app-category.productivity",
