@@ -7,7 +7,8 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "prebuild": "cd .. && npm run build"
   },
   "devDependencies": {
     "electron": "^30.5.1",
@@ -18,6 +19,20 @@
     "productName": "Quiz0r",
     "files": [
       "**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../.next/standalone",
+        "to": "next/standalone"
+      },
+      {
+        "from": "../.next/static",
+        "to": "next/static"
+      },
+      {
+        "from": "../public",
+        "to": "next/public"
+      }
     ],
     "mac": {
       "target": "dmg",
