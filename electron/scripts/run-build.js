@@ -10,17 +10,22 @@ const hasArg = (needle) => {
   return args.some((arg) => variations.includes(arg));
 };
 
+const hasShorthandFlag = (flag) =>
+  args.some((arg) => arg.startsWith('-') && !arg.startsWith('--') && arg.includes(flag));
+
 const buildingMac =
   process.platform === 'darwin' ||
   hasArg('--mac') ||
   hasArg('--macos') ||
   args.includes('-m') ||
+  hasShorthandFlag('m') ||
   args.includes('mac');
 const buildingWindows =
   process.platform === 'win32' ||
   hasArg('--win') ||
   hasArg('--windows') ||
   args.includes('-w') ||
+  hasShorthandFlag('w') ||
   args.includes('win');
 
 const pkg = require('../package.json');
