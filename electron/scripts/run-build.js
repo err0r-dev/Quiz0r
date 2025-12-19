@@ -113,6 +113,27 @@ if (!fs.existsSync(nextStandaloneDir) || !fs.existsSync(nextStaticDir)) {
   process.exit(1);
 }
 
+// Bundle the custom production server with Socket.io support
+console.log('\nBundling production server with Socket.io...');
+const esbuildBin = path.resolve(__dirname, '..', 'node_modules', '.bin', process.platform === 'win32' ? 'esbuild.cmd' : 'esbuild');
+const serverEntry = path.resolve(__dirname, '..', 'server', 'production-server.ts');
+const serverOutput = path.join(nextStandaloneDir, 'server.js');
+
+// Bundle server with all dependencies except 'next' which is in standalone node_modules
+runOrExit(esbuildBin, [
+  serverEntry,
+  '--bundle',
+  '--platform=node',
+  '--target=node18',
+  '--format=cjs',
+  `--outfile=${serverOutput}`,
+  '--external:next',
+  '--external:@prisma/client',
+  '--external:prisma',
+], { cwd: repoRoot });
+
+console.log('Production server bundled successfully');
+
 if (!hasConfigArg) {
   configPath = path.join(os.tmpdir(), `electron-builder-config-${Date.now()}.json`);
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
