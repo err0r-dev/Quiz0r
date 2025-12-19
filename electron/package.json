@@ -7,8 +7,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
-    "prebuild": "cd .. && npm run build"
+    "build": "node ./scripts/run-build.js"
   },
   "devDependencies": {
     "electron": "^30.5.1",
@@ -37,10 +36,21 @@
     "mac": {
       "target": "dmg",
       "category": "public.app-category.productivity",
-      "hardenedRuntime": true
+      "hardenedRuntime": true,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.inherit.plist",
+      "identity": "Developer ID Application",
+      "notarize": {
+        "teamId": "${env:APPLE_TEAM_ID}",
+        "appleId": "${env:APPLEID}",
+        "appleIdPassword": "${env:APPLEIDPASS}"
+      }
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "certificateFile": "${env:CSC_LINK}",
+      "certificatePassword": "${env:CSC_KEY_PASSWORD}",
+      "certificateSubjectName": "Quiz0r"
     }
   }
 }
