@@ -78,6 +78,17 @@ docker compose logs -f   # wait for "Ready on http://localhost:3000"
   - `UNSPLASH_API_KEY` (image sourcing)
   - `NGROK_AUTHTOKEN` can also be saved via the UI.
 
+### Desktop app signing (Electron)
+- macOS notarization/signing (used when the required variables are set for `npm --prefix electron run build` on macOS or `--mac` targets):
+  - `APPLEID` — Apple ID email used for notarization.
+  - `APPLEIDPASS` or `AC_PASSWORD` — app-specific password or keychain reference (e.g., `@keychain:AC_PASSWORD`).
+  - `APPLE_TEAM_ID` — Developer Team ID for the notarization ticket.
+- Windows signing for NSIS output (when the signing variables are set):
+  - `CSC_LINK` — path/URL to the `.p12` certificate (can be a base64 data URL).
+  - `CSC_KEY_PASSWORD` — password for the signing certificate.
+
+If these variables are missing for a platform you are targeting, the Electron build script will warn and continue, producing unsigned artifacts for that OS.
+
 ## ngrok (external access)
 - Add your authtoken in the admin UI: `http://localhost:3000/admin/settings`.
 - The server auto-starts a tunnel when a token is saved or present at boot (`src/lib/tunnel.ts`).
