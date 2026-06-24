@@ -9,6 +9,8 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
+    assignees:
+      - "jeisaacs"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -16,3 +18,5 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
+    assignees:
+      - "jeisaacs"
