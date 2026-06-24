@@ -1,0 +1,17 @@
+# Managed by Terraform (github-tf). Do not edit directly — change the
+# github_repository_file resource in security-scanning.tf instead.
+name: Security Scanning
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    uses: err0r-dev/.github/workflows/reusable-security.yml@main
+    with:
+      python: false
