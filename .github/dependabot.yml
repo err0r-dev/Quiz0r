@@ -1,0 +1,18 @@
+# Managed by Terraform (github-tf). Do not edit directly — change the registry
+# in repos-registry.tf / the template in files/dependabot.yml.tftpl instead.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
