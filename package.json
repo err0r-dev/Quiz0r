@@ -48,7 +48,7 @@
     "jszip": "^3.10.1",
     "lucide-react": "^0.555.0",
     "nanoid": "^5.1.6",
-    "next": "^14.2.33",
+    "next": "^16.2.9",
     "openai": "^6.10.0",
     "prisma": "^5.22.0",
     "qrcode.react": "^4.2.0",
