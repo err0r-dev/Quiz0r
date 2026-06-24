@@ -7,6 +7,14 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # Batch every update in this ecosystem into ONE PR so a weekly run opens at
+    # most one PR per ecosystem instead of up to the limit. Keeps concurrent
+    # terraform-pr plans (which each read the whole estate via one PAT) from
+    # piling up and tripping GitHub API rate limits. See issue #38.
+    groups:
+      npm:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
     assignees:
@@ -16,6 +24,14 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # Batch every update in this ecosystem into ONE PR so a weekly run opens at
+    # most one PR per ecosystem instead of up to the limit. Keeps concurrent
+    # terraform-pr plans (which each read the whole estate via one PAT) from
+    # piling up and tripping GitHub API rate limits. See issue #38.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
     assignees:
