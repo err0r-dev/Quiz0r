@@ -1,0 +1,19 @@
+{
+  // Managed by Terraform (github-tf). Do not edit directly — change
+  // files/renovate.json and let CI re-apply. See issue #43.
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "assignees": ["jeisaacs"],
+  "separateMajorMinor": false,
+  "prConcurrentLimit": 1,
+  "prHourlyLimit": 0,
+  "lockFileMaintenance": { "enabled": true },
+  "packageRules": [
+    {
+      "groupName": "all dependencies",
+      "matchPackageNames": ["*"]
+    }
+  ]
+}
